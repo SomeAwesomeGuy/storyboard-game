@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<entry key="database">bananapoop</entry>
+<entry key="dbusername">bananapoop</entry>
+<entry key="dbpassword">bananapass</entry>
+<entry key="dbaddress">localhost</entry>
+<entry key="drawingsDirectory">C:\Users\Sean\Documents\My Dropbox\Storyboard Pics\</entry>
+</properties>
