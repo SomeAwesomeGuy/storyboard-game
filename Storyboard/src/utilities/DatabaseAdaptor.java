@@ -156,7 +156,7 @@ public class DatabaseAdaptor {
 		System.out.println("[EVENT][DATABASE]: inserting new story");
 		final String id = createId();
 		
-		final String maxSeqNumQuery = "SELECT max(seq_num) as max FROM item where thread_id = '" + threadId + "'";
+		final String maxSeqNumQuery = "SELECT max(seq_num) AS max FROM item WHERE thread_id = '" + threadId + "'";
 		final ResultSet res = executeQuery(maxSeqNumQuery);
 		if(res.next()) {
 			final int seqNum = res.getInt("max") + 1;
@@ -188,7 +188,7 @@ public class DatabaseAdaptor {
 		final String id = createId();
 		final String filename = id + ".png";
 		
-		final String maxSeqNumQuery = "SELECT max(seq_num) as max FROM item where thread_id = '" + threadId + "'";
+		final String maxSeqNumQuery = "SELECT max(seq_num) AS max FROM item WHERE thread_id = '" + threadId + "'";
 		final ResultSet res = executeQuery(maxSeqNumQuery);
 		if(res.next()) {
 			final int seqNum = res.getInt("max") + 1;
@@ -223,18 +223,19 @@ public class DatabaseAdaptor {
 		final List<SBThread> oldThreads = new ArrayList<SBThread>();
 		final Set<String> oldIds = new HashSet<String>();
 		
-		final String threadsQuery = "SELECT t.id, t.title, i1.creator, i1.create_datetime AS create_date, i2.creator AS poster, i2.create_datetime AS last_date, i2.type FROM thread t, item i1, item i2 WHERE t.id = i1.thread_id AND i1.seq_num = 1 AND t.last_item_id = i2.id ORDER BY last_date desc";
+		final String threadsQuery = "SELECT t.id, t.title, i1.creator, i1.create_datetime AS create_date, i2.creator AS poster, i2.create_datetime AS last_date, i2.action, i2.seq_num FROM thread t, item i1, item i2 WHERE t.id = i1.thread_id AND i1.seq_num = 1 AND t.last_item_id = i2.id ORDER BY last_date desc";
 		final ResultSet res1 = executeQuery(threadsQuery);
 		while(res1.next()) {
 			final String id = res1.getString("id");
-			final String title = res1.getString("name");
+			final String title = res1.getString("title");
 			final String creator = res1.getString("creator");
 			final Date createDate = res1.getTimestamp("create_date");
 			final String poster = res1.getString("poster");
 			final Date lastDate = res1.getTimestamp("last_date");
-			final SBAction nextAction = SBAction.make(res1.getString("type")).getNextAction();
+			final SBAction nextAction = SBAction.make(res1.getString("action")).getNextAction();
+			final int lastSeqNum = res1.getInt("seq_num");
 			
-			final SBThread thread = new SBThread(id, title, creator, createDate, poster, lastDate, nextAction);
+			final SBThread thread = new SBThread(id, title, creator, createDate, poster, lastDate, lastSeqNum, nextAction);
 			allThreads.add(thread);
 		}
 		
@@ -329,6 +330,26 @@ public class DatabaseAdaptor {
 			itemList.add(new SBItem(action, itemId, story, creator, createDate));
 		}
 		return itemList;
+	}
+	
+	/**
+	 * Retrieves the last sequence number in a thread
+	 * @param threadId	the id of the thread
+	 * @return	the highest sequence number in the thread
+	 * @throws SQLException
+	 */
+	public int getLastSeqNum(final String threadId) throws SQLException {
+		System.out.println("[EVENT][DATABASE]: checking seq_num");
+		final String query = "SELECT max(seq_num) AS max FROM item WHERE thread_id = '" + threadId + "'";
+		final ResultSet res = executeQuery(query);
+		if(res.next()) {
+			return res.getInt("max");
+		}
+		else {
+			System.err.println("[ERROR][DATABASE]: unable to find max seq_num");
+			//TODO: handle this
+		}
+		return -1;
 	}
 	
 	/**

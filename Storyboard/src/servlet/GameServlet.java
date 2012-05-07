@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import javax.imageio.ImageIO;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -118,14 +119,24 @@ public class GameServlet extends HttpServlet {
 		final String username = (String) request.getSession().getAttribute(SBAttribute.USERNAME.name());
 		if(username == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
 			//TODO: handle this
 		}
 		
 		final String threadId = request.getParameter("thread");
+		final String lastSeqNum = request.getParameter("lastSeqNum");
 		final String story = request.getParameter("story");
 		
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
+			final int dbSeqNum = dbAdaptor.getLastSeqNum(threadId);
+			if(dbSeqNum != Integer.parseInt(lastSeqNum)) {
+				request.setAttribute(SBAttribute.MESSAGE.name(), "Someone beat you to the punch! A story was submitted for this drawing already.");
+				final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
+				view.forward(request, response);
+				return;
+			}
+			
 			dbAdaptor.newStory(threadId, username, story);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -147,14 +158,32 @@ public class GameServlet extends HttpServlet {
 		final String username = (String) request.getSession().getAttribute(SBAttribute.USERNAME.name());
 		if(username == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
 			//TODO: handle this
 		}
 		
 		final String threadId = request.getParameter("thread");
-		final String encodedPic = request.getParameter("pic");
+		final String lastSeqNum = request.getParameter("lastSeqNum");
+		final String encodedPic = request.getParameter("drawing");
+		
+		final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
+		try {
+			final int dbSeqNum = dbAdaptor.getLastSeqNum(threadId);
+			if(dbSeqNum != Integer.parseInt(lastSeqNum)) {
+				request.setAttribute(SBAttribute.MESSAGE.name(), "Someone beat you to the punch! A drawing was submitted for this story already.");
+				final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
+				view.forward(request, response);
+			}
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+			//TODO: handle this
+		}
+		
 		
 		if(encodedPic.indexOf("data:image/png;base64,") < 0) {
 			System.err.println("Error: encoded image not found");
+			request.setAttribute(SBAttribute.MESSAGE.name(), "The was a problem receiving the drawing. Please try again!");
+			response.sendRedirect(SBPages.ERROR.getAddress());
 			return;
 			//TODO: handle this
 		}
@@ -165,7 +194,7 @@ public class GameServlet extends HttpServlet {
 		final BufferedImage bufferedImage = ImageIO.read(inputStream);
 		
 		try {
-			final String picPath = DatabaseAdaptor.getInstance().newDrawing(threadId, username);
+			final String picPath = dbAdaptor.newDrawing(threadId, username);
 			
 			final File outputfile = new File(picPath);
 			ImageIO.write(bufferedImage, "png", outputfile);

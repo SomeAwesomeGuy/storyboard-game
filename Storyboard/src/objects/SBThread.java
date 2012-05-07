@@ -13,6 +13,7 @@ public class SBThread {
 	private final String g_poster;
 	private final Date g_create;
 	private final Date g_latest;
+	private final int g_lastSeqNum;
 	private SBAction g_action;
 	
 	public SBThread(
@@ -22,6 +23,7 @@ public class SBThread {
 			final Date createDate,
 			final String latestPoster,
 			final Date latestDate,
+			final int lastSeqNum,
 			final SBAction action) {
 		g_id = id;
 		g_title = title;
@@ -29,6 +31,7 @@ public class SBThread {
 		g_create = createDate;
 		g_poster = latestPoster;
 		g_latest = latestDate;
+		g_lastSeqNum = lastSeqNum;
 		g_action = action;
 	}
 	
@@ -62,6 +65,10 @@ public class SBThread {
 	
 	public String getLatestDateString() {
 		return DatabaseAdaptor.s_timeFormat.format(g_latest);
+	}
+	
+	public int getLastSeqNum() {
+		return g_lastSeqNum;
 	}
 	
 	public SBAction getNextAction() {

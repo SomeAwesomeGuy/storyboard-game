@@ -8,7 +8,8 @@
 		<a href="Main.jsp">Return</a><br>
 		Storyboard Write!<br>
 		<% 
-		final String threadId = request.getParameter("thread");	
+		final String threadId = request.getParameter("thread");
+		final String lastSeqNum = request.getParameter("lastSeqNum");
 		if(threadId == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			//TODO: handle this
@@ -25,6 +26,7 @@
 				</tr>
 			</table>
 			<input type="hidden" id="formType" name="formType" value="WRITE"/>
+			<input type="hidden" id="lastSeqNum" name="lastSeqNum" value="<%out.print(lastSeqNum);%>"/>
 			<input type="hidden" id="thread" name="thread" value="<%out.print(threadId);%>"/>
 			<input type="submit" value="Submit"/>
 		</form> 

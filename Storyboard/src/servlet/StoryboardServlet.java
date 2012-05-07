@@ -76,7 +76,7 @@ public class StoryboardServlet extends HttpServlet {
 			if(dbAdaptor.login(username, password, request.getRemoteAddr())) {
 				// Login successful
 				System.out.println("[INFO][WELCOME]: User \"" + username + "\" has successfully logged in");
-				final HttpSession session = request.getSession(true);
+				final HttpSession session = request.getSession();
 				session.setAttribute(SBAttribute.USERNAME.name(), username);
 				response.sendRedirect(SBPages.MAIN.getAddress());
 			}

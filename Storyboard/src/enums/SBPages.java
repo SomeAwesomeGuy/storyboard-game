@@ -8,7 +8,8 @@ public enum SBPages {
 	MAIN("Main.jsp"),
 	CREATE("Create.jsp"),
 	WRITE("Write.jsp"),
-	DRAW("Draw.jsp");
+	DRAW("Draw.jsp"),
+	ERROR("Error.jsp");
 	
 	private String g_address;
 	
