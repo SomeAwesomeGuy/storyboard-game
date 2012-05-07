@@ -30,6 +30,6 @@
 			<a href="Register.jsp">Register</a> 
 		</form> 
 		<br>
-		Warning: The site works on Firefox, Chrome, and Safari, but not Internet Explorer
+		Warning: The site works on Firefox, Chrome, and Safari (including iPhone and iPad), but not Internet Explorer
 	</body>
 </html>

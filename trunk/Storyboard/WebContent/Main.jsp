@@ -43,7 +43,7 @@
 							final SBAction action = thread.getNextAction();
 							
 							out.println("<tr>");
-							out.println("<td><a href=\"" + action.getJSPFile() + "?thread=" + thread.getId() + "\">" + action.getDisplayName() + "</a></td>");
+							out.println("<td><a href=\"" + action.getJSPFile() + "?thread=" + thread.getId() + "&lastSeqNum=" + thread.getLastSeqNum() + "\">" + action.getDisplayName() + "</a></td>");
 							out.println("<td>" + thread.getTitle() + "</td>");
 							out.println("<td>" + thread.getCreator() + "</td>");
 							out.println("<td>" + thread.getCreateDateString() + "</td>");
@@ -69,7 +69,7 @@
 							final SBAction action = thread.getNextAction();
 							
 							out.println("<tr>");
-							out.println("<td><a href=\"" + action.getJSPFile() + "?thread=" + thread.getId() + "\">" + action.getDisplayName() + "</a></td>");
+							out.println("<td><a href=\"" + action.getJSPFile() + "?thread=" + thread.getId() + "&lastSeqNum=" + thread.getLastSeqNum() + "\">" + action.getDisplayName() + "</a></td>");
 							out.println("<td>" + thread.getTitle() + "</td>");
 							out.println("<td>" + thread.getCreator() + "</td>");
 							out.println("<td>" + thread.getCreateDateString() + "</td>");

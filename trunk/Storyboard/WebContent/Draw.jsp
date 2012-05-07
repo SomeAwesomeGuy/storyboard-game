@@ -6,6 +6,7 @@
 <html>
   <head>
     <title>Storyboard Draw</title>
+    <a href="Main.jsp">Return</a><br>
     <style type="text/css"><!--
       #container { position: relative; }
       #imageView { border: 1px solid #000; }
@@ -16,7 +17,7 @@ margin: 0px;
 }
     --></style>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script>
-    <script type="text/javascript" src="paint.js"></script>
+    <script type="text/javascript" src="draw.js"></script>
     <script type="text/javascript" src="init.js"></script>
   </head>
   <body>
@@ -26,12 +27,13 @@ margin: 0px;
   			<td>Story:</td>
   			<td>
   				<%
-  					final String threadId = request.getParameter("thread");
-	  				if(threadId == null) {
-	  					response.sendRedirect(SBPages.WELCOME.getAddress());
-	  					//TODO: handle this
-	  				}
-	  				out.println(DatabaseAdaptor.getInstance().getLastStory(threadId));
+				final String threadId = request.getParameter("thread");
+  				final String lastSeqNum = request.getParameter("lastSeqNum");
+  				if(threadId == null) {
+  					response.sendRedirect(SBPages.WELCOME.getAddress());
+  					//TODO: handle this
+  				}
+  				out.println(DatabaseAdaptor.getInstance().getLastStory(threadId));
   				%>
   			</td>
   		</tr>
@@ -68,7 +70,9 @@ href="http://www.konqueror.org">Konqueror</a>.</p>
 </div>
 <div id="stats" style="font-size:8pt; padding-left: 50px; float: left;">0 0</div>
 </div>
-<form id="picSubmit" action="Game" method="post">
+<form id="submit" action="Game" method="post">
+	<input type="hidden" id="drawing" name="drawing"/>
+	<input type="hidden" id="lastSeqNum" name="lastSeqNum" value="<%out.print(lastSeqNum);%>"/>
 	<input type="hidden" id="thread" name="thread" value="<%out.print(threadId);%>"/>
 	<input type="hidden" id="formType" name="formType" value="DRAW"/>
 </form>
