@@ -90,11 +90,21 @@ public class GameServlet extends HttpServlet {
 		final String username = (String) request.getSession().getAttribute(SBAttribute.USERNAME.name());
 		if(username == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
 			//TODO: handle this
 		}
 		
 		final String title = request.getParameter("title");
 		final String story = request.getParameter("story");
+		
+		if(title.trim().isEmpty()) {
+			handleError(request, response, "The title cannot be blank.");
+			return;
+		}
+		if(story.trim().isEmpty()) {
+			handleError(request, response, "The story cannot be blank.");
+			return;
+		}
 				
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
@@ -127,13 +137,16 @@ public class GameServlet extends HttpServlet {
 		final String lastSeqNum = request.getParameter("lastSeqNum");
 		final String story = request.getParameter("story");
 		
+		if(story.trim().isEmpty()) {
+			handleError(request, response, "The story cannot be blank.");
+			return;
+		}
+		
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
 			final int dbSeqNum = dbAdaptor.getLastSeqNum(threadId);
 			if(dbSeqNum != Integer.parseInt(lastSeqNum)) {
-				request.setAttribute(SBAttribute.MESSAGE.name(), "Someone beat you to the punch! A story was submitted for this drawing already.");
-				final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
-				view.forward(request, response);
+				handleError(request, response, "Someone beat you to the punch! A story was submitted for this drawing already.");
 				return;
 			}
 			
@@ -173,17 +186,16 @@ public class GameServlet extends HttpServlet {
 				request.setAttribute(SBAttribute.MESSAGE.name(), "Someone beat you to the punch! A drawing was submitted for this story already.");
 				final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
 				view.forward(request, response);
+				return;
 			}
 		} catch (SQLException e1) {
 			e1.printStackTrace();
 			//TODO: handle this
 		}
 		
-		
 		if(encodedPic.indexOf("data:image/png;base64,") < 0) {
 			System.err.println("Error: encoded image not found");
-			request.setAttribute(SBAttribute.MESSAGE.name(), "The was a problem receiving the drawing. Please try again!");
-			response.sendRedirect(SBPages.ERROR.getAddress());
+			handleError(request, response, "The was a problem receiving the drawing. Please try again!");
 			return;
 			//TODO: handle this
 		}
@@ -296,5 +308,19 @@ public class GameServlet extends HttpServlet {
         
         input.close();
         output.close();
+	}
+	
+	/**
+	 * Handle an error
+	 * @param request
+	 * @param response
+	 * @param message	Error message
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	private void handleError(HttpServletRequest request, HttpServletResponse response, final String message) throws ServletException, IOException {
+		request.setAttribute(SBAttribute.MESSAGE.name(), message);
+		final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
+		view.forward(request, response);
 	}
 }

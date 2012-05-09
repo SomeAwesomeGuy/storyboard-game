@@ -107,31 +107,49 @@ public class StoryboardServlet extends HttpServlet {
 		
 		if(!password1.equals(password2)) {
 			// Inconsistent passwords
-			final RequestDispatcher view = request.getRequestDispatcher(SBPages.REGISTER.getAddress());
-			request.setAttribute(SBAttribute.MESSAGE.name(), "Passwords do not match");
-			view.forward(request, response);
+			handleRegisterError(request, response, "Passwords do not match");
+			return;
 		}
-		else {
-			try {
-				final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
-				if(dbAdaptor.register(username, password1, request.getRemoteAddr())) {
-					// Register successful
-					System.out.println("[INFO][WELCOME]: Registered user \"" + username + "\"");
-					final HttpSession session = request.getSession(true);
-					session.setAttribute(SBAttribute.USERNAME.name(), username);
-					response.sendRedirect(SBPages.MAIN.getAddress());
-				}
-				else {
-					// Username already taken
-					System.out.println("[INFO][WELCOME]: Username \"" + username + "\" is already taken");
-					final RequestDispatcher view = request.getRequestDispatcher(SBPages.REGISTER.getAddress());
-					request.setAttribute(SBAttribute.MESSAGE.name(), "Username already taken");
-					view.forward(request, response);
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-				//TODO: handle this
+		if(!username.matches("[a-zA-Z0-9]*")) {
+			handleRegisterError(request, response, "Username must be alphanumeric");
+			return;
+		}
+		if(!password1.matches("[a-zA-Z0-9]*")) {
+			handleRegisterError(request, response, "Password must be alphanumeric");
+			return;
+		}
+		
+		try {
+			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
+			if(dbAdaptor.register(username, password1, request.getRemoteAddr())) {
+				// Register successful
+				System.out.println("[INFO][WELCOME]: Registered user \"" + username + "\"");
+				final HttpSession session = request.getSession(true);
+				session.setAttribute(SBAttribute.USERNAME.name(), username);
+				response.sendRedirect(SBPages.MAIN.getAddress());
 			}
+			else {
+				// Username already taken
+				System.out.println("[INFO][WELCOME]: Username \"" + username + "\" is already taken");
+				handleRegisterError(request, response, "Username already taken");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			//TODO: handle this
 		}
+    }
+    
+    /**
+     * Handle register error
+     * @param request
+     * @param response
+     * @param message	Error message
+     * @throws ServletException
+     * @throws IOException
+     */
+    private void handleRegisterError(HttpServletRequest request, HttpServletResponse response, final String message) throws ServletException, IOException {
+    	final RequestDispatcher view = request.getRequestDispatcher(SBPages.REGISTER.getAddress());
+		request.setAttribute(SBAttribute.MESSAGE.name(), message);
+		view.forward(request, response);
     }
 }

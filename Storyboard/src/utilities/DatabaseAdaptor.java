@@ -2,6 +2,7 @@ package utilities;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -138,8 +139,8 @@ public class DatabaseAdaptor {
 		final String id = createId();
 		
 		// Create thread
-		final String threadQuery = "INSERT INTO thread VALUES('" + id + "', '" + threadTitle + "', '')";
-		executeUpdate(threadQuery);
+		final String threadQuery = "INSERT INTO thread VALUES('" + id + "', ?, '')";
+		executePrepared(threadQuery, threadTitle);
 		
 		// Create story
 		newStory(id, username, story);
@@ -164,8 +165,8 @@ public class DatabaseAdaptor {
 			final String itemQuery = "INSERT INTO item VALUES('" + id + "', '" + threadId + "', " + seqNum + ", '" + username + "', '" + getCurrentTime() + "', '" + SBAction.STORY.name() + "')";
 			executeUpdate(itemQuery);
 			
-			final String storyQuery = "INSERT INTO story VALUES('" + id + "','" + story + "')";
-			executeUpdate(storyQuery);
+			final String storyQuery = "INSERT INTO story VALUES('" + id + "', ?)";
+			executePrepared(storyQuery, story);
 			
 			final String threadQuery = "UPDATE thread SET last_item_id = '" + id + "' WHERE id = '" + threadId + "'";
 			executeUpdate(threadQuery);
@@ -389,6 +390,13 @@ public class DatabaseAdaptor {
 		if(g_printQueries) {
 			System.out.println("[INFO][DATABASE]: " + update);
 		}
+	}
+	
+	private void executePrepared(final String update, final String str) throws SQLException {
+		final PreparedStatement ps = g_connection.prepareStatement(update);
+		ps.setString(1, str);
+		ps.executeUpdate();
+		//TODO: construct query and log
 	}
 	
 	/**
