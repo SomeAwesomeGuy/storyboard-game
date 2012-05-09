@@ -16,7 +16,7 @@
 			<tr valign=top>
 				<td nowrap valign=top>
 					<a href="FAQ.jsp">FAQ</a><br>
-					<a href="Create.jsp">Create Game</a><br>
+					<a href="Create.jsp">Create Thread</a><br>
 					<a href="Welcome">Log Out</a><br>
 				</td>
 				<td width="100%">
