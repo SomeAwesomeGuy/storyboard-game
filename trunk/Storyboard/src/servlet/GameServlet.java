@@ -65,7 +65,6 @@ public class GameServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		final String type = request.getParameter("formType");
 		if(type == null) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND, "Unrecognized form");
 			//TODO: handle this
 		}
 		else if(type.equals("CREATE")) {
@@ -195,7 +194,7 @@ public class GameServlet extends HttpServlet {
 		
 		if(encodedPic.indexOf("data:image/png;base64,") < 0) {
 			System.err.println("Error: encoded image not found");
-			handleError(request, response, "The was a problem receiving the drawing. Please try again!");
+			handleError(request, response, "There was a problem receiving the drawing.");
 			return;
 			//TODO: handle this
 		}
@@ -211,9 +210,13 @@ public class GameServlet extends HttpServlet {
 			final File outputfile = new File(picPath);
 			ImageIO.write(bufferedImage, "png", outputfile);
 			System.out.println("[INFO][GAME]: new drawing written to " + picPath);
-		} catch (SQLException e) {
+		} catch(SQLException e) {
 			e.printStackTrace();
 			//TODO: handle this
+		} catch(IOException e) {
+			e.printStackTrace();
+			handleError(request, response, "The was a problem saving the drawing to the server.");
+			return;
 		}
 		
 		response.sendRedirect(SBPages.MAIN.getAddress());
@@ -230,7 +233,7 @@ public class GameServlet extends HttpServlet {
 	private void handleLastDrawing(HttpServletRequest request, HttpServletResponse response, final String threadId) throws ServletException, IOException {
 		try {
 			final String filename = DatabaseAdaptor.getInstance().getLastDrawing(threadId);
-			handleImage(response, filename);
+			handleImage(request, response, filename);
 		} catch(SQLException e) {
 			e.printStackTrace();
 			//TODO: handle this
@@ -250,7 +253,7 @@ public class GameServlet extends HttpServlet {
 	private void handleDrawingRequest(HttpServletRequest request, HttpServletResponse response, final String itemId) throws ServletException, IOException {
 		try {
 			final String imagePath = DatabaseAdaptor.getInstance().getDrawingById(itemId);
-			handleImage(response, imagePath);
+			handleImage(request, response, imagePath);
 		} catch(SQLException e) {
 			e.printStackTrace();
 			//TODO: handle this
@@ -264,20 +267,20 @@ public class GameServlet extends HttpServlet {
 	 * @param response
 	 * @param filename	the filename of the image
 	 * @throws IOException
+	 * @throws ServletException 
 	 */
-	private void handleImage(final HttpServletResponse response, final String filename) throws IOException {
+	private void handleImage(final HttpServletRequest request, final HttpServletResponse response, final String filename) throws IOException, ServletException {
 		if(filename == null) {
 			// image not found in database
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			handleError(request, response, "Image not found in database.");
 			return;
-			//TODO: handle this
 		}
 		
 		final File imageFile = new File(ConfigAdaptor.getInstance().getProperty("drawingsDirectory") + filename);
 		
 		if(!imageFile.exists()) {
 			// image file not found on server
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			handleError(request, response, "Image not found on server.");
 			return;
 			//TODO: handle this
 		}
@@ -286,7 +289,7 @@ public class GameServlet extends HttpServlet {
 		
 		if (contentType == null || !contentType.startsWith("image")) {
             // file is not recognized as an image
-            response.sendError(HttpServletResponse.SC_NOT_FOUND); // 404.
+			handleError(request, response, "Image not recognized.");
             return;
           //TODO: handle this
         }
