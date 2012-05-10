@@ -8,6 +8,7 @@
 		Storyboard Error
 		<br>
 		<a href="Main.jsp">Return to Storyboard</a><br>
+		<br>
 		<%
 		final String message = (String)request.getAttribute(SBAttribute.MESSAGE.name());
 		if(message != null) {

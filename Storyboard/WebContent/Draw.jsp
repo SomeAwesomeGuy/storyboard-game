@@ -22,6 +22,7 @@ margin: 0px;
   </head>
   <body>
   	Storyboard Draw!<br>
+  	<br>
   	<table>
   		<tr>
   			<td>Story:</td>
