@@ -1,10 +1,11 @@
+<%@page import="enums.SBPages"%>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
     pageEncoding="ISO-8859-1"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <title>Storyboard FAQ</title>
 	<body>
-		<a href="Main.jsp">Return</a><br>
+		<a href="<%out.print(SBPages.MAIN.getAddress()); %>">Return</a><br>
 		Storyboard FAQ<br>
 		<br>
 		<i>How do you play this game?</i><br>
@@ -16,10 +17,20 @@
 		<br>
 		<br>
 		<i>Why is this site so ugly?</i><br>
-		This was the best I could do with my lack of design sense and html experience. If you think you can do better, you're welcome to help!
+		This was the best I could do with my lack of design sense and html experience. If you think you can help me out, let me know!
 		<br>
 		<br>
 		<i>I found a bug. Now what?</i><br>
 		Kill it with your shoe. Don't miss. If it escapes, it may come back while you're sleeping.
+		<br>
+		<br>
+		<i>Seriously, I found a problem with your game. Now what?</i><br>
+		Let me know by submitting a <a href="<%out.print(SBPages.COMMENT.getAddress()); %>">comment</a>. 
+		Describe the problem and what you were doing when it happened, and I'll look into it! 
+		Also, if you have any suggestions about how to improve the game, I'd love to hear them!
+		<br>
+		<br>
+		<i>You're so awesome! How do I compensate you for your efforts?</i><br>
+		No, <i>you're</i> awesome! If you insist, just go to the aforementioned comments page and submit your credit card number! I'll handle the rest.
 	</body>
 </html>

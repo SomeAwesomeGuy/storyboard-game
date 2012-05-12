@@ -2,7 +2,7 @@ package objects;
 
 import java.util.Date;
 
-import utilities.DatabaseAdaptor;
+import utilities.DateStringUtil;
 
 import enums.SBAction;
 
@@ -52,7 +52,7 @@ public class SBThread {
 	}
 	
 	public String getCreateDateString() {
-		return DatabaseAdaptor.s_timeFormat.format(g_create);
+		return DateStringUtil.getDate(g_create);
 	}
 	
 	public String getLatestPoster() {
@@ -64,7 +64,7 @@ public class SBThread {
 	}
 	
 	public String getLatestDateString() {
-		return DatabaseAdaptor.s_timeFormat.format(g_latest);
+		return DateStringUtil.getTimeSince(g_latest);
 	}
 	
 	public int getLastSeqNum() {

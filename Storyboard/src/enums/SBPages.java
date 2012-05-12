@@ -9,7 +9,10 @@ public enum SBPages {
 	CREATE("Create.jsp"),
 	WRITE("Write.jsp"),
 	DRAW("Draw.jsp"),
-	ERROR("Error.jsp");
+	ERROR("Error.jsp"),
+	COMMENT("Comment.jsp"),
+	VIEWCOMMENTS("ViewComments.jsp"),
+	FAQ("FAQ.jsp");
 	
 	private String g_address;
 	

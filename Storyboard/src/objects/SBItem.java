@@ -1,12 +1,13 @@
 package objects;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import utilities.DatabaseAdaptor;
 
 import enums.SBAction;
 
 public class SBItem {
+	private static final SimpleDateFormat s_timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
 	private final SBAction g_action;
 	private final String g_itemId;
 	private final String g_story;
@@ -42,6 +43,6 @@ public class SBItem {
 	}
 	
 	public String getCreateDateString() {
-		return DatabaseAdaptor.s_timeFormat.format(g_createDate);
+		return s_timeFormat.format(g_createDate);
 	}
 }

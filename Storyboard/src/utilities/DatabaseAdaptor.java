@@ -6,7 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -15,15 +14,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import objects.SBComment;
 import objects.SBItem;
 import objects.SBThread;
+import objects.SBUser;
 
 import enums.SBAction;
 import enums.SBThreadGroup;
 
 public class DatabaseAdaptor {
-	public static final SimpleDateFormat s_timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	
 	private static DatabaseAdaptor s_databaseAdaptor = null;
 	
 	private Connection g_connection = null;
@@ -81,26 +80,27 @@ public class DatabaseAdaptor {
 	 * Compares the given password with the password in the database
 	 * @param username	the user's name
 	 * @param password	the user's password
-	 * @return			true if the login succeeded, false if the login failed
+	 * @return			SBUser if the login succeeded, null if the login failed
 	 * @throws SQLException
 	 */
-	public boolean login(final String username, final String password, final String ipAddress) throws SQLException {
+	public SBUser login(final String username, final String password, final String ipAddress) throws SQLException {
 		System.out.println("[EVENT][DATABASE]: login");
-		final String passwordQuery = "SELECT password FROM user where username = '" + username + "'";
+		final String passwordQuery = "SELECT password, isAdmin FROM user where username = '" + username + "'";
 		final ResultSet res = executeQuery(passwordQuery);
 		if(res.next()) {
 			final String dbPassword = res.getString("password");
+			final boolean isAdmin = res.getInt("isAdmin") == 1;
 			final String passHash = getPasswordHash(username, password);
 			if(dbPassword.equals(passHash)) {
 				final String updateTimeQuery = "UPDATE user SET last_login_datetime = '" + getCurrentTime() + "' where username = '" + username + "'";
 				executeUpdate(updateTimeQuery);
 				final String updateIPQuery = "UPDATE user SET last_ip_address = '" + ipAddress + "' where username = '" + username + "'";
 				executeUpdate(updateIPQuery);
-				return true;
+				return new SBUser(username, isAdmin);
 			}
 		}
 		
-		return false;
+		return null;
 	}
 	
 	/**
@@ -110,13 +110,13 @@ public class DatabaseAdaptor {
 	 * @return			true if the register succeeded, false if the username is already taken
 	 * @throws SQLException
 	 */
-	public boolean register(final String username, final String password, final String ipAddress) throws SQLException {
+	public SBUser register(final String username, final String password, final String ipAddress) throws SQLException {
 		System.out.println("[EVENT][DATABASE]: inserting new user");
 		final String usernameQuery = "SELECT username FROM user where username = '" + username + "'";
 		final ResultSet res = executeQuery(usernameQuery);
 		if(res.next()) {
-			
-			return false;
+			//TODO: log here
+			return null;
 		}
 		
 		final String currentTime = getCurrentTime();
@@ -124,7 +124,7 @@ public class DatabaseAdaptor {
 		final String userQuery = "INSERT INTO user VALUES('" + username + "', '" + passHash + "', '" + currentTime + "', '" + currentTime + "', '" + ipAddress +"')";
 		executeUpdate(userQuery);
 		
-		return true;
+		return new SBUser(username, false);
 	}
 	
 	/**
@@ -354,6 +354,135 @@ public class DatabaseAdaptor {
 	}
 	
 	/**
+	 * Inserts a new comment into the database
+	 * @param username	the username of the submitter
+	 * @param comment	the user's comment
+	 * @throws SQLException
+	 */
+	public void newComment(final String username, final String comment) throws SQLException {
+		//TODO: log
+		final String threadQuery = "INSERT INTO comment VALUES('" + username + "', ?, '" + getCurrentTime() + "')";
+		executePrepared(threadQuery, comment);
+	}
+	
+	/**
+	 * Retrieves all the comments from the database
+	 * @return
+	 * @throws SQLException
+	 */
+	public List<SBComment> getCommentList() throws SQLException {
+		//TODO: log
+		final List<SBComment> commentList = new ArrayList<SBComment>();
+		final String query = "SELECT username, comment, create_datetime FROM comment ORDER BY create_datetime DESC";
+		final ResultSet res = executeQuery(query);
+		while(res.next()) {
+			final String username = res.getString("username");
+			final String comment = res.getString("comment");
+			final Date datetime = res.getTimestamp("create_datetime");
+			commentList.add(new SBComment(username, comment, datetime));
+		}
+		return commentList;
+	}
+	
+	/**
+	 * Deletes a thread and all objects related to it
+	 * @param threadId	the id of the thread
+	 * @return	a list of the filepaths of the images on the server to be deleted
+	 * @throws SQLException
+	 */
+	public List<String> deleteThread(final String threadId) throws SQLException {
+		//TODO: log this
+		final List<String> drawingPathList = new ArrayList<String>();
+		final String getDrawingsQuery = "SELECT filepath FROM item i, drawing d WHERE i.thread_id = '" + threadId + "' AND i.id = d.id";
+		final ResultSet res = executeQuery(getDrawingsQuery);
+		while(res.next()) {
+			final String filepath = res.getString("filepath");
+			drawingPathList.add(filepath);
+		}
+		
+		final String deleteStoryQuery = "DELETE FROM s USING story AS s INNER JOIN item AS i WHERE i.id = s.id AND i.thread_id = '" + threadId + "'";
+		final String deleteDrawingQuery = "DELETE FROM d USING drawing AS d INNER JOIN item AS i WHERE i.id = d.id AND i.thread_id = '" + threadId + "'";
+		final String deleteItemQuery = "DELETE FROM item WHERE thread_id = '"+ threadId + "'";
+		final String deleteThreadQuery = "DELETE FROM thread WHERE id = '" + threadId + "'";
+		
+		executeUpdate(deleteStoryQuery);
+		executeUpdate(deleteDrawingQuery);
+		executeUpdate(deleteItemQuery);
+		executeUpdate(deleteThreadQuery);
+				
+		return drawingPathList;
+	}
+	
+	/**
+	 * Delete the last post in a thread and all related objects
+	 * @param threadId	the id of the thread
+	 * @return	the filename of the image to be deleted if the last post was a drawing
+	 * @throws SQLException
+	 */
+	public String deleteLastPost(final String threadId) throws SQLException {
+		//TODO: log this
+		String filename = null;
+		final String lastItemQuery = "SELECT i.id, i.seq_num, i.action FROM thread t, item i WHERE t.id = i.thread_id AND t.last_item_id = i.id AND t.id = '" + threadId + "'";
+		final ResultSet itemRes = executeQuery(lastItemQuery);
+		if(itemRes.next()) {
+			final String itemId = itemRes.getString("id");
+			final int seqNum = itemRes.getInt("seq_num");
+			final SBAction action = SBAction.make(itemRes.getString("action"));
+			if(action == SBAction.PICTURE) {
+				final String fileNameQuery = "SELECT filepath FROM drawing WHERE id = '" + itemId + "'";
+				final ResultSet fileRes = executeQuery(fileNameQuery);
+				if(fileRes.next()) {
+					filename = fileRes.getString("filepath");
+					final String deleteDrawingQuery = "DELETE FROM drawing WHERE id = '" + itemId + "'";
+					executeUpdate(deleteDrawingQuery);
+				}
+				else {
+					// Image filepath not found in database
+					//TODO: handle this
+					return null;
+				}
+			}
+			else if(action == SBAction.STORY) {
+				final String deleteStoryQuery = "DELETE FROM story WHERE id = '" + itemId + "'";
+				executeUpdate(deleteStoryQuery);
+			}
+			
+			final String deleteItemQuery = "DELETE FROM item WHERE id = '" + itemId + "'";
+			executeUpdate(deleteItemQuery);
+			
+			if(seqNum == 1) {
+				// Since we're deleting the only item in the thread, we'll delete the thread as well
+				//TODO: log this
+				final String deleteThreadQuery = "DELETE FROM thread WHERE id = '" + threadId + "'";
+				executeUpdate(deleteThreadQuery);
+			}
+			else {
+				// Reassign the last_item_id of the thread
+				final String prevItemQuery = "SELECT id FROM item WHERE thread_id = '" + threadId + "' AND seq_num = " + (seqNum - 1);
+				final ResultSet prevItemRes = executeQuery(prevItemQuery);
+				if(prevItemRes.next()) {
+					final String prevItemId = prevItemRes.getString("id");
+					
+					final String threadQuery = "UPDATE thread SET last_item_id = '" + prevItemId + "' WHERE id = '" + threadId + "'";
+					executeUpdate(threadQuery);
+				}
+				else {
+					// Previous item not found
+					//TODO: handle this
+					return null;
+				}
+			}
+		}
+		else {
+			// Last item not found
+			//TODO: handle this
+			return null;
+		}
+		
+		return filename;
+	}
+	
+	/**
 	 * Hashes a password
 	 * @param username	the username of the user
 	 * @param password	the password of the user
@@ -392,6 +521,12 @@ public class DatabaseAdaptor {
 		}
 	}
 	
+	/**
+	 * Executes a prepared statement
+	 * @param update	the query
+	 * @param str		the string to insert into the query
+	 * @throws SQLException
+	 */
 	private void executePrepared(final String update, final String str) throws SQLException {
 		final PreparedStatement ps = g_connection.prepareStatement(update);
 		ps.setString(1, str);
@@ -412,6 +547,6 @@ public class DatabaseAdaptor {
 	 * @return	the current time
 	 */
 	private String getCurrentTime() {
-		return s_timeFormat.format(new Date());
+		return DateStringUtil.getDatetime(new Date());
 	}
 }

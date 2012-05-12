@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.servlet.RequestDispatcher;
@@ -16,6 +17,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import objects.SBUser;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -76,6 +79,15 @@ public class GameServlet extends HttpServlet {
 		else if(type.equals("DRAW")) {
 			handleDraw(request, response);
 		}
+		else if(type.equals("COMMENT")) {
+			handleComment(request, response);
+		}
+		else if(type.equals("DELETEALL")) {
+			handleDeleteAll(request, response);
+		}
+		else if(type.equals("DELETELAST")) {
+			handleDeleteLast(request, response);
+		}
 	}
 	
 	/**
@@ -85,9 +97,9 @@ public class GameServlet extends HttpServlet {
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void handleCreate(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		final String username = (String) request.getSession().getAttribute(SBAttribute.USERNAME.name());
-		if(username == null) {
+	private void handleCreate(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
+		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+		if(user == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
@@ -107,7 +119,7 @@ public class GameServlet extends HttpServlet {
 				
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
-			dbAdaptor.newThread(title, story, username);
+			dbAdaptor.newThread(replaceChevrons(title), replaceChevrons(story), user.getUsername());
 		} catch (SQLException e) {
 			e.printStackTrace();
 			//TODO: handle this
@@ -124,9 +136,9 @@ public class GameServlet extends HttpServlet {
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void handleWrite(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		final String username = (String) request.getSession().getAttribute(SBAttribute.USERNAME.name());
-		if(username == null) {
+	private void handleWrite(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
+		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+		if(user == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
@@ -149,7 +161,7 @@ public class GameServlet extends HttpServlet {
 				return;
 			}
 			
-			dbAdaptor.newStory(threadId, username, story);
+			dbAdaptor.newStory(threadId, user.getUsername(), replaceChevrons(story));
 		} catch (SQLException e) {
 			e.printStackTrace();
 			//TODO: handle this
@@ -160,15 +172,109 @@ public class GameServlet extends HttpServlet {
 	}
 	
 	/**
+	 * Handle a new comment
+	 * @param request
+	 * @param response
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	private void handleComment(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
+		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+		if(user == null) {
+			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
+			//TODO: handle this
+		}
+		
+		final String comment = request.getParameter("comment");
+		try {
+			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
+			dbAdaptor.newComment(user.getUsername(), comment);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			//TODO: handle this
+		}
+		
+		System.out.println("[INFO][GAME]: new comment created");
+		response.sendRedirect(SBPages.MAIN.getAddress());
+	}
+	
+	/**
+	 * Handle deletion of thread
+	 * @param request
+	 * @param response
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	private void handleDeleteAll(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
+		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+		if(user == null) {
+			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
+			//TODO: handle this
+		}
+		
+		final String threadId = request.getParameter("thread");
+		try {
+			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
+			final List<String> imageList = dbAdaptor.deleteThread(threadId);
+			if(imageList != null) {
+				for(final String imageFile : imageList) {
+					deleteImage(imageFile);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+			//TODO: handle this
+		}
+		
+		System.out.println("[INFO][GAME]: thread deleted");
+		response.sendRedirect(SBPages.MAIN.getAddress());
+	}
+	
+	/**
+	 * Handle deletion of last post in thread
+	 * @param request
+	 * @param response
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	private void handleDeleteLast(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
+		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+		if(user == null) {
+			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
+			//TODO: handle this
+		}
+		
+		final String threadId = request.getParameter("thread");
+		try {
+			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
+			final String imageFile = dbAdaptor.deleteLastPost(threadId);
+			if(imageFile != null) {
+				deleteImage(imageFile);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return;
+			//TODO: handle this
+		}
+		
+		System.out.println("[INFO][GAME]: post deleted");
+		response.sendRedirect(SBPages.MAIN.getAddress());
+	}
+	
+	/**
 	 * Handle a new drawing request
 	 * @param request
 	 * @param response
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void handleDraw(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		final String username = (String) request.getSession().getAttribute(SBAttribute.USERNAME.name());
-		if(username == null) {
+	private void handleDraw(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
+		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+		if(user == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
@@ -205,7 +311,7 @@ public class GameServlet extends HttpServlet {
 		final BufferedImage bufferedImage = ImageIO.read(inputStream);
 		
 		try {
-			final String picPath = dbAdaptor.newDrawing(threadId, username);
+			final String picPath = dbAdaptor.newDrawing(threadId, user.getUsername());
 			
 			final File outputfile = new File(picPath);
 			ImageIO.write(bufferedImage, "png", outputfile);
@@ -230,7 +336,7 @@ public class GameServlet extends HttpServlet {
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void handleLastDrawing(HttpServletRequest request, HttpServletResponse response, final String threadId) throws ServletException, IOException {
+	private void handleLastDrawing(final HttpServletRequest request, final HttpServletResponse response, final String threadId) throws ServletException, IOException {
 		try {
 			final String filename = DatabaseAdaptor.getInstance().getLastDrawing(threadId);
 			handleImage(request, response, filename);
@@ -250,7 +356,7 @@ public class GameServlet extends HttpServlet {
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void handleDrawingRequest(HttpServletRequest request, HttpServletResponse response, final String itemId) throws ServletException, IOException {
+	private void handleDrawingRequest(final HttpServletRequest request, final HttpServletResponse response, final String itemId) throws ServletException, IOException {
 		try {
 			final String imagePath = DatabaseAdaptor.getInstance().getDrawingById(itemId);
 			handleImage(request, response, imagePath);
@@ -321,9 +427,30 @@ public class GameServlet extends HttpServlet {
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void handleError(HttpServletRequest request, HttpServletResponse response, final String message) throws ServletException, IOException {
+	private void handleError(final HttpServletRequest request, final HttpServletResponse response, final String message) throws ServletException, IOException {
 		request.setAttribute(SBAttribute.MESSAGE.name(), message);
 		final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
 		view.forward(request, response);
+	}
+	
+	/**
+	 * Delete the image file on the server
+	 * @param filename	the filename of the image
+	 */
+	private static void deleteImage(final String filename) {
+		final File imageFile = new File(ConfigAdaptor.getInstance().getProperty("drawingsDirectory") + filename);
+		if(imageFile.exists()) {
+			imageFile.delete();
+		}
+	}
+	
+	/**
+	 * Replace chevrons in a String with html-friendly versions
+	 * @param s	the string
+	 * @return	a string without chevrons
+	 */
+	private static String replaceChevrons(String s) {
+		s = s.replaceAll("<", "&lt;");
+		return s.replaceAll(">", "&gt;");
 	}
 }

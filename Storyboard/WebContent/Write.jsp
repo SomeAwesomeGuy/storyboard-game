@@ -12,6 +12,7 @@
 		final String lastSeqNum = request.getParameter("lastSeqNum");
 		if(threadId == null) {
 			response.sendRedirect(SBPages.WELCOME.getAddress());
+			return;
 			//TODO: handle this
 		}
 		%>

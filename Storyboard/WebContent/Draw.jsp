@@ -17,12 +17,10 @@ margin: 0px;
 }
     --></style>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script>
-    <script type="text/javascript" src="draw.js"></script>
+    <script type="text/javascript" src="draw.js?n=2"></script>
     <script type="text/javascript" src="init.js"></script>
   </head>
   <body>
-  	Storyboard Draw!<br>
-  	<br>
   	<table>
   		<tr>
   			<td>Story:</td>
@@ -32,9 +30,10 @@ margin: 0px;
   				final String lastSeqNum = request.getParameter("lastSeqNum");
   				if(threadId == null) {
   					response.sendRedirect(SBPages.WELCOME.getAddress());
+  					return;
   					//TODO: handle this
   				}
-  				out.println(DatabaseAdaptor.getInstance().getLastStory(threadId));
+  				out.println("<pre>" + DatabaseAdaptor.getInstance().getLastStory(threadId) + "</pre>");
   				%>
   			</td>
   		</tr>
@@ -50,11 +49,11 @@ margin: 0px;
 <div id="green" style="background:green; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
 <div id="blue" style="background:blue; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
 <div id="purple" style="background:purple; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
+<div id="brown" style="background:brown; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
 <div id="black" style="background:black; width:50px; height:50px; float:left; border: 1px dashed white;"></div><div style="clear: both;"></div>
-<div id="white" style="background:white; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
 <hr/>
-<div id="fill" style="width:50px; height:50px; float:left;"><img src="fill.png" width="50" height="50" /></div><div style="clear: both;"></div>
-<div id="save" style="width:50px; height:50px; float:left;">Submit</div><div style="clear: both;"></div>
+<button id="save" style="width:50px; height:50px; float:left;">Done!</button>
+<div style="clear: both;"></div>
 </div>
 
 <div id="canvasDiv" style="float: left;">
@@ -68,9 +67,6 @@ href="http://www.mozilla.com">Firefox</a>, <a
 href="http://www.apple.com/safari">Safari</a>, and <a
 href="http://www.konqueror.org">Konqueror</a>.</p>
 </canvas>
-</div>
-<div id="stats" style="font-size:8pt; padding-left: 50px; float: left;">0 0</div>
-</div>
 <form id="submit" action="Game" method="post">
 	<input type="hidden" id="drawing" name="drawing"/>
 	<input type="hidden" id="lastSeqNum" name="lastSeqNum" value="<%out.print(lastSeqNum);%>"/>

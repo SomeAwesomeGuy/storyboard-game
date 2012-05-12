@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import objects.SBUser;
+
 import enums.SBAttribute;
 import enums.SBPages;
 
@@ -73,11 +75,12 @@ public class StoryboardServlet extends HttpServlet {
 		
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
-			if(dbAdaptor.login(username, password, request.getRemoteAddr())) {
+			final SBUser user = dbAdaptor.login(username, password, request.getRemoteAddr());
+			if(user != null) {
 				// Login successful
 				System.out.println("[INFO][WELCOME]: User \"" + username + "\" has successfully logged in");
 				final HttpSession session = request.getSession();
-				session.setAttribute(SBAttribute.USERNAME.name(), username);
+				session.setAttribute(SBAttribute.USER.name(), user);
 				response.sendRedirect(SBPages.MAIN.getAddress());
 			}
 			else {
@@ -121,11 +124,12 @@ public class StoryboardServlet extends HttpServlet {
 		
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
-			if(dbAdaptor.register(username, password1, request.getRemoteAddr())) {
+			final SBUser user = dbAdaptor.register(username, password1, request.getRemoteAddr());
+			if(user != null) {
 				// Register successful
 				System.out.println("[INFO][WELCOME]: Registered user \"" + username + "\"");
 				final HttpSession session = request.getSession(true);
-				session.setAttribute(SBAttribute.USERNAME.name(), username);
+				session.setAttribute(SBAttribute.USER.name(), user);
 				response.sendRedirect(SBPages.MAIN.getAddress());
 			}
 			else {
