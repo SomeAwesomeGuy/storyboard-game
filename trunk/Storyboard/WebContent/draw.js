@@ -14,9 +14,6 @@ function init() {
 	canvas.width  = window.innerWidth - 75;
 	canvas.height = window.innerHeight - 75;
 	
-	canvas.onselectstart = function () { return false; };
-	canvas.onselectstart = function () { return false; };
-  
 	canvas.addEventListener('mousemove', onMouseMove, false);
 	canvas.addEventListener('click', onClick, false);
 	
@@ -37,9 +34,9 @@ function init() {
 	$('#green').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
 	$('#blue').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
 	$('#purple').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
+	$('#brown').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
 	$('#black').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
-	$('#white').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
-	$('#fill').get(0).addEventListener('click', function(e) { onFill(); }, false);
+	
 	$('#save').get(0).addEventListener('click', function(e) { onSave(); }, false);
 	
 	context.fillStyle = 'white';
@@ -62,6 +59,9 @@ function getOffset(event){
 HTMLCanvasElement.prototype.getOffset = getOffset;
 
 function onMouseMove(event) {
+	canvas.onselectstart = function () { return false; };
+	canvas.onmousedown = function () { return false; };
+	
 	var pos = canvas.getOffset(event);
 	var x = event.pageX - pos.x;
 	var y = event.pageY - pos.y;
@@ -112,6 +112,9 @@ function onClick(e) {
 }
 
 function onColorClick(color) {
+	canvas.onselectstart = function () { return false; };
+	canvas.onselectstart = function () { return false; };
+	
 	// Start a new path to begin drawing in a new color.
 	context.closePath();
 	context.beginPath();
@@ -132,15 +135,6 @@ function onColorClick(color) {
 	lastColor = color;
 }
 
-function onFill() {
-	// Start a new path to begin drawing in a new color.
-	context.closePath();
-	context.beginPath();
-
-	context.fillStyle = context.strokeStyle;
-	context.fillRect(0, 0, canvas.width, canvas.height);
-}
-
 function onStamp(id) {
 	// Update the stamp image.
 	stampId = '#' + id;
@@ -153,7 +147,9 @@ function onStamp(id) {
 }
 
 function onSave() {
-	var img = canvas.toDataURL("image/png");
-	document.getElementById('drawing').value = img; 
-	document.forms["submit"].submit();
+	if(confirm("Are you sure?") == true) {
+		var img = canvas.toDataURL("image/png");
+		document.getElementById('drawing').value = img; 
+		document.forms["submit"].submit();
+	}
 }

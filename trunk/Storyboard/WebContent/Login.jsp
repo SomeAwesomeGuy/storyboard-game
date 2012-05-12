@@ -7,11 +7,11 @@
 		Storyboard(alpha) Login
 		<br>
 		<%
-		session.removeAttribute(SBAttribute.USERNAME.name());
-		final String message = (String)request.getAttribute(SBAttribute.MESSAGE.name());
-		if(message != null) {
+			session.removeAttribute(SBAttribute.USER.name());
+				final String message = (String)request.getAttribute(SBAttribute.MESSAGE.name());
+				if(message != null) {
 			out.println(message);
-		}
+				}
 		%>
 		<form action="Welcome" method="post">
 			<table>
