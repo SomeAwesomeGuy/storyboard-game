@@ -2,9 +2,9 @@ package enums;
 
 public enum SBAction {
 	INVALID("", ""),
-	PICTURE("Draw", "Draw.jsp"),
-	STORY("Write", "Write.jsp"),
-	VIEW("View", "View.jsp");
+	PICTURE("Draw", SBPages.DRAW.getAddress()),
+	STORY("Write", SBPages.WRITE.getAddress()),
+	VIEW("View", SBPages.VIEW.getAddress());
 	
 	private final String g_displayName;
 	private final String g_jspFile;

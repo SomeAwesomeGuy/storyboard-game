@@ -1,4 +1,5 @@
 <%@page import="java.util.List"%>
+<%@page import="org.apache.log4j.Logger"%>
 <%@page import="enums.SBAction"%>
 <%@page import="enums.SBAttribute"%>
 <%@page import="enums.SBPages"%>
@@ -7,10 +8,20 @@
 <%@page import="utilities.DatabaseAdaptor"%>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
     pageEncoding="ISO-8859-1"%>
+<%!final static Logger s_log = Logger.getLogger(SBPages.VIEW.getAddress()); %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 	<title>Storyboard View</title>
 	<head>
+		<style type="text/css">
+			pre {
+			white-space: pre-wrap; /* css-3 */
+			white-space: -moz-pre-wrap !important; /* Mozilla, since 1999 */
+			white-space: -pre-wrap; /* Opera 4-6 */
+			white-space: -o-pre-wrap; /* Opera 7 */
+			word-wrap: break-word; /* Internet Explorer 5.5+ */
+			}
+		</style>
 		<script type="text/javascript">
 			function deleteLast() {
 				if (confirm("Delete the LAST post?") == true) {
@@ -32,11 +43,15 @@
 		<table>
 			<% 
 			final String threadId = request.getParameter("thread");
-			if(threadId == null) {
+			final String threadTitle = request.getParameter("title");
+			final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
+			if(threadId == null || user == null) {
+				s_log.debug("Session has expired");
 				response.sendRedirect(SBPages.WELCOME.getAddress());
 				return;
 				//TODO: handle this
 			}
+			s_log.info(user.getUsername() + " - View page for thread " + threadId + " \"" + threadTitle + "\"");
 			final List<SBItem> itemList = DatabaseAdaptor.getInstance().getItemList(threadId);
 			for(final SBItem item : itemList) {
 				out.println("<tr>");
@@ -58,12 +73,6 @@
 			<input type="hidden" id="formType" name="formType"/>
 		</form>
 		<%
-		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
-		if(user == null) {
-			response.sendRedirect(SBPages.WELCOME.getAddress());
-			return;
-			//TODO: handle this
-		}
 		if(user.isAdmin()) {
 			out.println("<input type=\"button\" onclick=\"deleteLast()\" value=\"Delete Last\"/>");
 			out.println("<input type=\"button\" onclick=\"deleteAll()\" value=\"Delete All\"/><br><br>");
