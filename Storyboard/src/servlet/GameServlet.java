@@ -21,9 +21,11 @@ import javax.servlet.http.HttpServletResponse;
 import objects.SBUser;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.log4j.Logger;
 
 import utilities.ConfigAdaptor;
 import utilities.DatabaseAdaptor;
+import utilities.LogFactory;
 
 import enums.SBAttribute;
 import enums.SBPages;
@@ -36,6 +38,8 @@ public class GameServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
 	private static final int DEFAULT_BUFFER_SIZE = 10240;
+	
+	private static final Logger s_log = LogFactory.getLogger(GameServlet.class);
 	       
     /**
      * @see HttpServlet#HttpServlet()
@@ -57,8 +61,8 @@ public class GameServlet extends HttpServlet {
 			handleDrawingRequest(request, response, itemId);
 		}
 		else {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
-			//TODO: handle this
 		}
 	}
 
@@ -68,7 +72,7 @@ public class GameServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		final String type = request.getParameter("formType");
 		if(type == null) {
-			//TODO: handle this
+			s_log.warn("Invalid HTTP request received");
 		}
 		else if(type.equals("CREATE")) {
 			handleCreate(request, response);
@@ -100,19 +104,22 @@ public class GameServlet extends HttpServlet {
 	private void handleCreate(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
 		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 		if(user == null) {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
 		}
 		
-		final String title = request.getParameter("title");
-		final String story = request.getParameter("story");
+		final String title = request.getParameter("title").trim();
+		final String story = request.getParameter("story").trim();
 		
-		if(title.trim().isEmpty()) {
+		if(title.isEmpty()) {
+			s_log.info(user.getUsername() + " - submitted thread with blank title");
 			handleError(request, response, "The title cannot be blank.");
 			return;
 		}
-		if(story.trim().isEmpty()) {
+		if(story.isEmpty()) {
+			s_log.info(user.getUsername() + " - submitted thread with blank story");
 			handleError(request, response, "The story cannot be blank.");
 			return;
 		}
@@ -121,11 +128,12 @@ public class GameServlet extends HttpServlet {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
 			dbAdaptor.newThread(replaceChevrons(title), replaceChevrons(story), user.getUsername());
 		} catch (SQLException e) {
-			e.printStackTrace();
-			//TODO: handle this
+			s_log.error("Database error while creating new thread", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		}
 		
-		System.out.println("[INFO][GAME]: new thread created");
+		s_log.info(user.getUsername() + " - Successfully submitted new thread \"" + title + "\"");
 		response.sendRedirect(SBPages.MAIN.getAddress());
 	}
 	
@@ -139,6 +147,7 @@ public class GameServlet extends HttpServlet {
 	private void handleWrite(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
 		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 		if(user == null) {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
@@ -149,6 +158,7 @@ public class GameServlet extends HttpServlet {
 		final String story = request.getParameter("story");
 		
 		if(story.trim().isEmpty()) {
+			s_log.info(user.getUsername() + " - submitted a blank story");
 			handleError(request, response, "The story cannot be blank.");
 			return;
 		}
@@ -157,17 +167,19 @@ public class GameServlet extends HttpServlet {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
 			final int dbSeqNum = dbAdaptor.getLastSeqNum(threadId);
 			if(dbSeqNum != Integer.parseInt(lastSeqNum)) {
+				s_log.info(user.getUsername() + " - submitted a story too late");
 				handleError(request, response, "Someone beat you to the punch! A story was submitted for this drawing already.");
 				return;
 			}
 			
 			dbAdaptor.newStory(threadId, user.getUsername(), replaceChevrons(story));
 		} catch (SQLException e) {
-			e.printStackTrace();
-			//TODO: handle this
+			s_log.error("Database error while creating new story", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		}
 		
-		System.out.println("[INFO][GAME]: new story created");
+		s_log.info(user.getUsername() + " - Successfully submitted new story");
 		response.sendRedirect(SBPages.MAIN.getAddress());
 	}
 	
@@ -181,6 +193,7 @@ public class GameServlet extends HttpServlet {
 	private void handleComment(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
 		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 		if(user == null) {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
@@ -191,11 +204,12 @@ public class GameServlet extends HttpServlet {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
 			dbAdaptor.newComment(user.getUsername(), comment);
 		} catch (SQLException e) {
-			e.printStackTrace();
-			//TODO: handle this
+			s_log.error("Database error while creating new comment", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		}
 		
-		System.out.println("[INFO][GAME]: new comment created");
+		s_log.info(user.getUsername() + " - Successfully submitted new comment");
 		response.sendRedirect(SBPages.MAIN.getAddress());
 	}
 	
@@ -209,9 +223,15 @@ public class GameServlet extends HttpServlet {
 	private void handleDeleteAll(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
 		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 		if(user == null) {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
+		}
+		if(!user.isAdmin()) {
+			s_log.info(user.getUsername() + " - User does not have permission to delete threads");
+			handleError(request, response, "You do not have permission to delete threads");
+			return;
 		}
 		
 		final String threadId = request.getParameter("thread");
@@ -224,12 +244,12 @@ public class GameServlet extends HttpServlet {
 				}
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			s_log.error("Database error while deleting thread", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
 			return;
-			//TODO: handle this
 		}
 		
-		System.out.println("[INFO][GAME]: thread deleted");
+		s_log.info(user.getUsername() + " - Successfully deleted thread " + threadId);
 		response.sendRedirect(SBPages.MAIN.getAddress());
 	}
 	
@@ -243,25 +263,31 @@ public class GameServlet extends HttpServlet {
 	private void handleDeleteLast(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
 		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 		if(user == null) {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
+		}
+		if(!user.isAdmin()) {
+			s_log.info(user.getUsername() + " - User does not have permission to delete posts");
+			handleError(request, response, "You do not have permission to delete posts");
+			return;
 		}
 		
 		final String threadId = request.getParameter("thread");
 		try {
 			final DatabaseAdaptor dbAdaptor = DatabaseAdaptor.getInstance();
-			final String imageFile = dbAdaptor.deleteLastPost(threadId);
+			final String imageFile = dbAdaptor.deleteLastItem(threadId);
 			if(imageFile != null) {
 				deleteImage(imageFile);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			s_log.error("Database error while deleting last post", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
 			return;
-			//TODO: handle this
 		}
 		
-		System.out.println("[INFO][GAME]: post deleted");
+		s_log.info(user.getUsername() + " - Successfully deleted post from thread " + threadId);
 		response.sendRedirect(SBPages.MAIN.getAddress());
 	}
 	
@@ -275,6 +301,7 @@ public class GameServlet extends HttpServlet {
 	private void handleDraw(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException {
 		final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 		if(user == null) {
+			s_log.debug("Session has expired");
 			response.sendRedirect(SBPages.WELCOME.getAddress());
 			return;
 			//TODO: handle this
@@ -288,21 +315,22 @@ public class GameServlet extends HttpServlet {
 		try {
 			final int dbSeqNum = dbAdaptor.getLastSeqNum(threadId);
 			if(dbSeqNum != Integer.parseInt(lastSeqNum)) {
+				s_log.info(user.getUsername() + " - submitted a drawing too late");
 				request.setAttribute(SBAttribute.MESSAGE.name(), "Someone beat you to the punch! A drawing was submitted for this story already.");
 				final RequestDispatcher view = request.getRequestDispatcher(SBPages.ERROR.getAddress());
 				view.forward(request, response);
 				return;
 			}
-		} catch (SQLException e1) {
-			e1.printStackTrace();
-			//TODO: handle this
+		} catch (SQLException e) {
+			s_log.error("Database error while checking for latest drawing", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		}
 		
 		if(encodedPic.indexOf("data:image/png;base64,") < 0) {
-			System.err.println("Error: encoded image not found");
+			s_log.error("Encoded image not found in HTTP request - " + encodedPic);
 			handleError(request, response, "There was a problem receiving the drawing.");
 			return;
-			//TODO: handle this
 		}
 		
 		final String data = encodedPic.substring(22);
@@ -315,16 +343,18 @@ public class GameServlet extends HttpServlet {
 			
 			final File outputfile = new File(picPath);
 			ImageIO.write(bufferedImage, "png", outputfile);
-			System.out.println("[INFO][GAME]: new drawing written to " + picPath);
+			s_log.debug("Image written to " + picPath);
 		} catch(SQLException e) {
-			e.printStackTrace();
-			//TODO: handle this
+			s_log.error("Database error while creating new drawing", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		} catch(IOException e) {
-			e.printStackTrace();
+			s_log.error("Error while saving new drawing", e);
 			handleError(request, response, "The was a problem saving the drawing to the server.");
 			return;
 		}
 		
+		s_log.info(user.getUsername() + " - Sucessfully submitted new drawing");
 		response.sendRedirect(SBPages.MAIN.getAddress());
 	}
 	
@@ -341,10 +371,13 @@ public class GameServlet extends HttpServlet {
 			final String filename = DatabaseAdaptor.getInstance().getLastDrawing(threadId);
 			handleImage(request, response, filename);
 		} catch(SQLException e) {
-			e.printStackTrace();
-			//TODO: handle this
+			s_log.error("Database error while retrieving drawing", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		} catch(IOException e) {
-			//TODO: handle this
+			s_log.error("Error while retrieving image from the server", e);
+			handleError(request, response, "Storyboard encountered a problem retrieving the image from the server.");
+			return;
 		}
 	}
 	
@@ -358,13 +391,16 @@ public class GameServlet extends HttpServlet {
 	 */
 	private void handleDrawingRequest(final HttpServletRequest request, final HttpServletResponse response, final String itemId) throws ServletException, IOException {
 		try {
-			final String imagePath = DatabaseAdaptor.getInstance().getDrawingById(itemId);
-			handleImage(request, response, imagePath);
+			final String filename = DatabaseAdaptor.getInstance().getDrawingById(itemId);
+			handleImage(request, response, filename);
 		} catch(SQLException e) {
-			e.printStackTrace();
-			//TODO: handle this
+			s_log.error("Database error while retrieving drawing", e);
+			handleError(request, response, "Storyboard encountered a database error. Please try again.");
+			return;
 		} catch(IOException e) {
-			//TODO: handle this
+			s_log.error("Error while retrieving image from the server", e);
+			handleError(request, response, "Storyboard encountered a problem retrieving the image from the server.");
+			return;
 		}
 	}
 
@@ -377,7 +413,7 @@ public class GameServlet extends HttpServlet {
 	 */
 	private void handleImage(final HttpServletRequest request, final HttpServletResponse response, final String filename) throws IOException, ServletException {
 		if(filename == null) {
-			// image not found in database
+			s_log.error("Drawing not found in the database");
 			handleError(request, response, "Image not found in database.");
 			return;
 		}
@@ -385,19 +421,17 @@ public class GameServlet extends HttpServlet {
 		final File imageFile = new File(ConfigAdaptor.getInstance().getProperty("drawingsDirectory") + filename);
 		
 		if(!imageFile.exists()) {
-			// image file not found on server
+			s_log.error("Image " + filename + " not found on server");
 			handleError(request, response, "Image not found on server.");
 			return;
-			//TODO: handle this
 		}
 		
 		final String contentType = getServletContext().getMimeType(imageFile.getAbsolutePath());
 		
 		if (contentType == null || !contentType.startsWith("image")) {
-            // file is not recognized as an image
+			s_log.error("File " + filename + " is not recognized as an image file");
 			handleError(request, response, "Image not recognized.");
             return;
-          //TODO: handle this
         }
 		
 		response.reset();
@@ -440,6 +474,7 @@ public class GameServlet extends HttpServlet {
 	private static void deleteImage(final String filename) {
 		final File imageFile = new File(ConfigAdaptor.getInstance().getProperty("drawingsDirectory") + filename);
 		if(imageFile.exists()) {
+			s_log.debug("Deleting " + filename + " from the server");
 			imageFile.delete();
 		}
 	}

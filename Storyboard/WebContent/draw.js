@@ -1,8 +1,7 @@
 var started = false;
 var canvas, context;
-var stampId = '';
 var lastColor = 'black';
-var lastStampId = '';
+var lineWidth = 5;
 
 var enableDraw = false; 
 
@@ -15,7 +14,6 @@ function init() {
 	canvas.height = window.innerHeight - 75;
 	
 	canvas.addEventListener('mousemove', onMouseMove, false);
-	canvas.addEventListener('click', onClick, false);
 	
 	canvas.addEventListener('mousedown', function(e) { enableDraw = true; }, false);
 	canvas.addEventListener('mouseup', function(e) { enableDraw = false; started = false; }, false); 
@@ -75,6 +73,7 @@ function onMouseMove(event) {
 		}
 		else {
 			context.lineTo(x, y);
+			//context.lineWidth = lineWidth;
 			context.stroke();
 		}
 	}
@@ -105,12 +104,6 @@ function onTouchMove(event) {
 	$('/#stats').text(x + ', ' + y);
 }
 
-function onClick(e) {
-	if (stampId.length > 0) {
-		context.drawImage($(stampId).get(0), e.pageX - 90, e.pageY - 60, 80, 80);
-	}
-}
-
 function onColorClick(color) {
 	canvas.onselectstart = function () { return false; };
 	canvas.onselectstart = function () { return false; };
@@ -135,15 +128,25 @@ function onColorClick(color) {
 	lastColor = color;
 }
 
-function onStamp(id) {
-	// Update the stamp image.
-	stampId = '#' + id;
+function onEraseClick() {
+	canvas.onselectstart = function () { return false; };
+	canvas.onselectstart = function () { return false; };
 	
-	$(lastStampId).css("border", "0px dashed white");
-	$(stampId).css("border", "1px dashed black");
+	// Start a new path to begin drawing in a new color.
+	context.closePath();
+	context.beginPath();
 	
-	// Store stamp so we can un-highlight it next time around.
-	lastStampId = stampId;	
+	// Select the new color.
+	context.strokeStyle = 'white';
+	
+	// Highlight selected color.
+	var borderColor = 'black';
+	
+	$('#' + lastColor).css("border", "0px dashed white");
+	$('#' + color).css("border", "1px dashed " + borderColor);
+	
+	// Store color so we can un-highlight it next time around.
+	lastColor = color;
 }
 
 function onSave() {

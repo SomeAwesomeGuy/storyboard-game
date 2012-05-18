@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 import objects.SBComment;
 import objects.SBItem;
 import objects.SBThread;
@@ -23,10 +25,15 @@ import enums.SBAction;
 import enums.SBThreadGroup;
 
 public class DatabaseAdaptor {
+	private static final Logger s_log = Logger.getLogger(DatabaseAdaptor.class);
+	
 	private static DatabaseAdaptor s_databaseAdaptor = null;
 	
 	private Connection g_connection = null;
-	private boolean g_printQueries = false;
+	
+	private final String g_url;
+	private final String g_username;
+	private final String g_password;
 	
 	/**
 	 * DatabaseAdaptor constructor
@@ -35,21 +42,12 @@ public class DatabaseAdaptor {
 		final ConfigAdaptor configAdaptor = ConfigAdaptor.getInstance();
 		final String database = configAdaptor.getProperty("database");
 		final String address = configAdaptor.getProperty("dbaddress");
-		final String username = configAdaptor.getProperty("dbusername");
-		final String password = configAdaptor.getProperty("dbpassword");
+		g_username = configAdaptor.getProperty("dbusername");
+		g_password = configAdaptor.getProperty("dbpassword");
 		
-		final String url = "jdbc:mysql://" + address + "/" + database;
+		g_url = "jdbc:mysql://" + address + "/" + database;
 		
-        try {
-			Class.forName("com.mysql.jdbc.Driver").newInstance();
-			g_connection = DriverManager.getConnection(url, username, password);
-		} catch (Exception e) {
-			System.err.println("[ERROR][DATABASE]: unable to connect to the database");
-			e.printStackTrace();
-			//TODO: handle this
-		}
-        
-        System.out.println ("[EVENT][DATABASE]: Database connection established");
+        connect();
 	}
 	
 	/**
@@ -66,13 +64,15 @@ public class DatabaseAdaptor {
 	/**
 	 * Close database connection
 	 */
-	public void closeConnection() {
+	private void connect() {
 		try {
-			g_connection.close();
-		} catch (SQLException e) {
-			System.err.println("[ERROR][DATABASE]: unable to close database connection");
-			e.printStackTrace();
-			//TODO: handle this
+			if(g_connection == null || g_connection.isClosed()) {
+				Class.forName("com.mysql.jdbc.Driver").newInstance();
+				g_connection = DriverManager.getConnection(g_url, g_username, g_password);
+				s_log.info("Database connection established");
+			}
+		} catch (Exception e) {
+			s_log.error("Unable to connect to the database", e);
 		}
 	}
 	
@@ -84,7 +84,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public SBUser login(final String username, final String password, final String ipAddress) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: login");
+		s_log.debug("Login");
 		final String passwordQuery = "SELECT password, isAdmin FROM user where username = '" + username + "'";
 		final ResultSet res = executeQuery(passwordQuery);
 		if(res.next()) {
@@ -111,17 +111,16 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public SBUser register(final String username, final String password, final String ipAddress) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: inserting new user");
+		s_log.debug("Register");
 		final String usernameQuery = "SELECT username FROM user where username = '" + username + "'";
 		final ResultSet res = executeQuery(usernameQuery);
 		if(res.next()) {
-			//TODO: log here
 			return null;
 		}
 		
 		final String currentTime = getCurrentTime();
 		final String passHash = getPasswordHash(username, password);
-		final String userQuery = "INSERT INTO user VALUES('" + username + "', '" + passHash + "', '" + currentTime + "', '" + currentTime + "', '" + ipAddress +"')";
+		final String userQuery = "INSERT INTO user VALUES('" + username + "', '" + passHash + "', '" + currentTime + "', '" + currentTime + "', '" + ipAddress +"', NULL)";
 		executeUpdate(userQuery);
 		
 		return new SBUser(username, false);
@@ -135,7 +134,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public void newThread(final String threadTitle, final String story, final String username) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: inserting new thread");
+		s_log.debug("New thread");
 		final String id = createId();
 		
 		// Create thread
@@ -154,7 +153,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public void newStory(final String threadId, final String username, final String story) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: inserting new story");
+		s_log.debug("New story");
 		final String id = createId();
 		
 		final String maxSeqNumQuery = "SELECT max(seq_num) AS max FROM item WHERE thread_id = '" + threadId + "'";
@@ -171,10 +170,6 @@ public class DatabaseAdaptor {
 			final String threadQuery = "UPDATE thread SET last_item_id = '" + id + "' WHERE id = '" + threadId + "'";
 			executeUpdate(threadQuery);
 		}
-		else {
-			System.err.println("[ERROR][DATABASE]: unable to find max seq_num");
-			//TODO: handle this
-		}
 	}
 	
 	/**
@@ -185,7 +180,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public String newDrawing(final String threadId, final String username) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: inserting new drawing");
+		s_log.debug("New drawing");
 		final String id = createId();
 		final String filename = id + ".png";
 		
@@ -203,10 +198,6 @@ public class DatabaseAdaptor {
 			final String threadQuery = "UPDATE thread SET last_item_id = '" + id + "' WHERE id = '" + threadId + "'";
 			executeUpdate(threadQuery);
 		}
-		else {
-			System.err.println("[ERROR][DATABASE]: unable to find max seq_num");
-			//TODO: handle this
-		}
 		
 		return ConfigAdaptor.getInstance().getProperty("drawingsDirectory") + filename;
 	}
@@ -218,7 +209,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public Map<SBThreadGroup, List<SBThread>> getThreads(final String username) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: Retrieve threads");
+		s_log.debug("Retrieve all threads");
 		final List<SBThread> allThreads = new ArrayList<SBThread>();
 		final List<SBThread> newThreads = new ArrayList<SBThread>();
 		final List<SBThread> oldThreads = new ArrayList<SBThread>();
@@ -270,7 +261,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public String getLastStory(final String threadId) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: Retrieve story");
+		s_log.debug("Retrieve last story");
 		final String query = "SELECT s.story FROM thread t, story s WHERE t.id='" + threadId + "' AND t.last_item_id = s.id";
 		final ResultSet res = executeQuery(query);
 		if(res.next()) {
@@ -286,7 +277,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public String getLastDrawing(final String threadId) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: Retrieve drawing");
+		s_log.debug("Retrieve last story");
 		final String query = "SELECT d.filepath from thread t, drawing d WHERE t.id = '" + threadId + "' AND t.last_item_id = d.id";
 		final ResultSet res = executeQuery(query);
 		if(res.next()) {
@@ -302,7 +293,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public String getDrawingById(final String itemId) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: Retrieve drawing");
+		s_log.debug("Retrieve drawing");
 		final String query = "SELECT d.filepath from drawing d WHERE d.id = '" + itemId + "'";
 		final ResultSet res = executeQuery(query);
 		if(res.next()) {
@@ -318,7 +309,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public List<SBItem> getItemList(final String threadId) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: Retrieve item list");
+		s_log.debug("Retrieve item list");
 		final List<SBItem> itemList = new ArrayList<SBItem>();
 		final String query = "SELECT i.id, i.action, i.creator, i.create_datetime, s.story FROM item i LEFT JOIN story s ON i.id = s.id WHERE i.thread_id = '" + threadId + "' ORDER BY i.seq_num";
 		final ResultSet res = executeQuery(query);
@@ -340,15 +331,11 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public int getLastSeqNum(final String threadId) throws SQLException {
-		System.out.println("[EVENT][DATABASE]: checking seq_num");
+		s_log.debug("Retrieve last sequence number");
 		final String query = "SELECT max(seq_num) AS max FROM item WHERE thread_id = '" + threadId + "'";
 		final ResultSet res = executeQuery(query);
 		if(res.next()) {
 			return res.getInt("max");
-		}
-		else {
-			System.err.println("[ERROR][DATABASE]: unable to find max seq_num");
-			//TODO: handle this
 		}
 		return -1;
 	}
@@ -360,7 +347,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public void newComment(final String username, final String comment) throws SQLException {
-		//TODO: log
+		s_log.debug("New comment");
 		final String threadQuery = "INSERT INTO comment VALUES('" + username + "', ?, '" + getCurrentTime() + "')";
 		executePrepared(threadQuery, comment);
 	}
@@ -371,7 +358,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public List<SBComment> getCommentList() throws SQLException {
-		//TODO: log
+		s_log.debug("Retrieve all comments");
 		final List<SBComment> commentList = new ArrayList<SBComment>();
 		final String query = "SELECT username, comment, create_datetime FROM comment ORDER BY create_datetime DESC";
 		final ResultSet res = executeQuery(query);
@@ -391,7 +378,7 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	public List<String> deleteThread(final String threadId) throws SQLException {
-		//TODO: log this
+		s_log.debug("Delete thread");
 		final List<String> drawingPathList = new ArrayList<String>();
 		final String getDrawingsQuery = "SELECT filepath FROM item i, drawing d WHERE i.thread_id = '" + threadId + "' AND i.id = d.id";
 		final ResultSet res = executeQuery(getDrawingsQuery);
@@ -419,8 +406,8 @@ public class DatabaseAdaptor {
 	 * @return	the filename of the image to be deleted if the last post was a drawing
 	 * @throws SQLException
 	 */
-	public String deleteLastPost(final String threadId) throws SQLException {
-		//TODO: log this
+	public String deleteLastItem(final String threadId) throws SQLException {
+		s_log.debug("Delete last item");
 		String filename = null;
 		final String lastItemQuery = "SELECT i.id, i.seq_num, i.action FROM thread t, item i WHERE t.id = i.thread_id AND t.last_item_id = i.id AND t.id = '" + threadId + "'";
 		final ResultSet itemRes = executeQuery(lastItemQuery);
@@ -437,8 +424,7 @@ public class DatabaseAdaptor {
 					executeUpdate(deleteDrawingQuery);
 				}
 				else {
-					// Image filepath not found in database
-					//TODO: handle this
+					s_log.error("Drawing not found in the database");
 					return null;
 				}
 			}
@@ -452,12 +438,13 @@ public class DatabaseAdaptor {
 			
 			if(seqNum == 1) {
 				// Since we're deleting the only item in the thread, we'll delete the thread as well
-				//TODO: log this
+				s_log.debug("Only one item in the thread, deleting thread");
 				final String deleteThreadQuery = "DELETE FROM thread WHERE id = '" + threadId + "'";
 				executeUpdate(deleteThreadQuery);
 			}
 			else {
 				// Reassign the last_item_id of the thread
+				s_log.debug("Reassigning thread.last_item_id");
 				final String prevItemQuery = "SELECT id FROM item WHERE thread_id = '" + threadId + "' AND seq_num = " + (seqNum - 1);
 				final ResultSet prevItemRes = executeQuery(prevItemQuery);
 				if(prevItemRes.next()) {
@@ -467,15 +454,13 @@ public class DatabaseAdaptor {
 					executeUpdate(threadQuery);
 				}
 				else {
-					// Previous item not found
-					//TODO: handle this
+					s_log.error("Previous item not found in the database");
 					return null;
 				}
 			}
 		}
 		else {
-			// Last item not found
-			//TODO: handle this
+			s_log.error("Last item not found");
 			return null;
 		}
 		
@@ -500,45 +485,44 @@ public class DatabaseAdaptor {
 	 * @throws SQLException
 	 */
 	private ResultSet executeQuery(final String query) throws SQLException {
+		connect();
 		final Statement st = g_connection.createStatement();
 		final ResultSet res = st.executeQuery(query);
-		if(g_printQueries) {
-			System.out.println("[INFO][DATABASE]: " + query);
-		}
+		s_log.debug(query);
 		return res;
 	}
 	
 	/**
 	 * Executes and logs a query
-	 * @param update	the query
+	 * @param query	the query
 	 * @throws SQLException
 	 */
-	private void executeUpdate(final String update) throws SQLException {
+	private void executeUpdate(final String query) throws SQLException {
+		connect();
 		final Statement st = g_connection.createStatement();
-		st.executeUpdate(update);
-		if(g_printQueries) {
-			System.out.println("[INFO][DATABASE]: " + update);
-		}
+		st.executeUpdate(query);
+		s_log.debug(query);
 	}
 	
 	/**
 	 * Executes a prepared statement
-	 * @param update	the query
+	 * @param query	the query
 	 * @param str		the string to insert into the query
 	 * @throws SQLException
 	 */
-	private void executePrepared(final String update, final String str) throws SQLException {
-		final PreparedStatement ps = g_connection.prepareStatement(update);
+	private void executePrepared(final String query, final String str) throws SQLException {
+		connect();
+		final PreparedStatement ps = g_connection.prepareStatement(query);
 		ps.setString(1, str);
 		ps.executeUpdate();
-		//TODO: construct query and log
+		s_log.debug(query + " - " + str);
 	}
 	
 	/**
 	 * Creates an id for threads and items
 	 * @return
 	 */
-	public static synchronized String createId() {
+	private static synchronized String createId() {
 		return "" + new Date().getTime();
 	}
 	

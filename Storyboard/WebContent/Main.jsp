@@ -1,5 +1,6 @@
 <%@page import="java.util.List"%>
 <%@page import="java.util.Map"%>
+<%@page import="org.apache.log4j.Logger"%>
 <%@page import="enums.SBAction"%>
 <%@page import="enums.SBAttribute"%>
 <%@page import="enums.SBPages"%>
@@ -9,6 +10,7 @@
 <%@page import="utilities.DatabaseAdaptor"%>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
     pageEncoding="ISO-8859-1"%>
+<%!final static Logger s_log = Logger.getLogger(SBPages.MAIN.getAddress()); %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 	<title>Storyboard</title>
@@ -19,10 +21,12 @@
 					<%
 					final SBUser user = (SBUser) request.getSession().getAttribute(SBAttribute.USER.name());
 					if(user == null) {
+						s_log.debug("Session has expired");
 						response.sendRedirect(SBPages.WELCOME.getAddress());
 						return;
 						//TODO: handle this
 					}
+					s_log.info(user.getUsername() + " - Main page");
 					if(user.isAdmin()) {
 						out.println("Admin<br>");
 						out.println("<a href=\"" + SBPages.VIEWCOMMENTS.getAddress() + "\">View Comments</a><br>");
@@ -39,8 +43,9 @@
 				<td width="100%">
 					Welcome to Storyboard! [Awesome logo goes here]<br>
 					If you're a new player, read over the FAQ for instructions on how to play.<br>
+					Check back often for updates and new threads!<br>
 					<br>
-					New Games<br>
+					New Threads<br>
 					<table border="1">
 						<tr>
 							<td>Action</td>
@@ -58,7 +63,11 @@
 							final SBAction action = user.isAdmin() ? SBAction.VIEW : thread.getNextAction();
 							
 							out.println("<tr>");
-							out.println("<td><a href=\"" + action.getJSPFile() + "?thread=" + thread.getId() + "&lastSeqNum=" + thread.getLastSeqNum() + "\">" + action.getDisplayName() + "</a></td>");
+							out.println("<td><a href=\"" + action.getJSPFile() + 
+									"?thread=" + thread.getId() + 
+									"&lastSeqNum=" + thread.getLastSeqNum() + 
+									"&title=" + thread.getTitle() +
+									"\">" + action.getDisplayName() + "</a></td>");
 							out.println("<td>" + thread.getTitle() + "</td>");
 							out.println("<td>" + thread.getCreator() + "</td>");
 							out.println("<td>" + thread.getCreateDateString() + "</td>");
@@ -69,7 +78,7 @@
 						%>
 					</table>
 					<br>
-					Old Games
+					Old Threads
 					<table border="1">
 						<tr>
 							<td>Action</td>
@@ -84,7 +93,11 @@
 							final SBAction action = thread.getNextAction();
 							
 							out.println("<tr>");
-							out.println("<td><a href=\"" + action.getJSPFile() + "?thread=" + thread.getId() + "&lastSeqNum=" + thread.getLastSeqNum() + "\">" + action.getDisplayName() + "</a></td>");
+							out.println("<td><a href=\"" + action.getJSPFile() + 
+									"?thread=" + thread.getId() + 
+									"&lastSeqNum=" + thread.getLastSeqNum() + 
+									"&title=" + thread.getTitle() +
+									"\">" + action.getDisplayName() + "</a></td>");
 							out.println("<td>" + thread.getTitle() + "</td>");
 							out.println("<td>" + thread.getCreator() + "</td>");
 							out.println("<td>" + thread.getCreateDateString() + "</td>");

@@ -11,6 +11,7 @@ public enum SBPages {
 	DRAW("Draw.jsp"),
 	ERROR("Error.jsp"),
 	COMMENT("Comment.jsp"),
+	VIEW("View.jsp"),
 	VIEWCOMMENTS("ViewComments.jsp"),
 	FAQ("FAQ.jsp");
 	
