@@ -66,7 +66,7 @@ public class DatabaseAdaptor {
 	 */
 	private void connect() {
 		try {
-			if(g_connection == null || g_connection.isClosed()) {
+			if(g_connection == null || g_connection.isValid(2)) {
 				Class.forName("com.mysql.jdbc.Driver").newInstance();
 				g_connection = DriverManager.getConnection(g_url, g_username, g_password);
 				s_log.info("Database connection established");

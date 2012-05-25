@@ -1,7 +1,8 @@
 var started = false;
 var canvas, context;
 var lastColor = 'black';
-var lineWidth = 5;
+var lastBrush = 'brush1';
+var lineWidth = 1;
 
 var enableDraw = false; 
 
@@ -10,8 +11,8 @@ function init() {
 	context = canvas.getContext('2d');
 	
 	// Auto-adjust canvas size to fit window.
-	canvas.width  = window.innerWidth - 75;
-	canvas.height = window.innerHeight - 75;
+	canvas.width  = window.innerWidth - 25;
+	canvas.height = window.innerHeight - 150;
 	
 	canvas.addEventListener('mousemove', onMouseMove, false);
 	
@@ -34,7 +35,10 @@ function init() {
 	$('#purple').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
 	$('#brown').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
 	$('#black').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
-	
+	$('#white').get(0).addEventListener('click', function(e) { onColorClick(e.target.id); }, false);
+	$('#brush1').get(0).addEventListener('click', function(e) { onBrushClick(e.target.id,1); }, false);
+	$('#brush2').get(0).addEventListener('click', function(e) { onBrushClick(e.target.id,5); }, false);
+	$('#brush3').get(0).addEventListener('click', function(e) { onBrushClick(e.target.id,10); }, false);
 	$('#save').get(0).addEventListener('click', function(e) { onSave(); }, false);
 	
 	context.fillStyle = 'white';
@@ -73,12 +77,9 @@ function onMouseMove(event) {
 		}
 		else {
 			context.lineTo(x, y);
-			//context.lineWidth = lineWidth;
 			context.stroke();
 		}
 	}
-	
-	$('/#stats').text(x + ', ' + y);
 }
 
 function onTouchMove(event) {
@@ -100,14 +101,9 @@ function onTouchMove(event) {
 			context.stroke();
 		}
 	}
-	
-	$('/#stats').text(x + ', ' + y);
 }
 
 function onColorClick(color) {
-	canvas.onselectstart = function () { return false; };
-	canvas.onselectstart = function () { return false; };
-	
 	// Start a new path to begin drawing in a new color.
 	context.closePath();
 	context.beginPath();
@@ -128,25 +124,16 @@ function onColorClick(color) {
 	lastColor = color;
 }
 
-function onEraseClick() {
-	canvas.onselectstart = function () { return false; };
-	canvas.onselectstart = function () { return false; };
-	
-	// Start a new path to begin drawing in a new color.
+function onBrushClick(brush, size) {
 	context.closePath();
 	context.beginPath();
 	
-	// Select the new color.
-	context.strokeStyle = 'white';
+	context.lineWidth = size;
 	
-	// Highlight selected color.
-	var borderColor = 'black';
+	$('#' + lastBrush).css("border", "0px dashed white");
+	$('#' + brush).css("border", "1px dashed black");
 	
-	$('#' + lastColor).css("border", "0px dashed white");
-	$('#' + color).css("border", "1px dashed " + borderColor);
-	
-	// Store color so we can un-highlight it next time around.
-	lastColor = color;
+	lastBrush = brush;
 }
 
 function onSave() {
