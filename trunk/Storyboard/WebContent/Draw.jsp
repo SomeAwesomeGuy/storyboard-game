@@ -28,7 +28,7 @@ pre {
 			}
     --></style>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script>
-    <script type="text/javascript" src="draw.js?n=5"></script>
+    <script type="text/javascript" src="draw.js?n=11"></script>
     <script type="text/javascript" src="init.js"></script>
   </head>
   <body>
@@ -55,18 +55,21 @@ pre {
   	</table>
     <div id="container" style="padding:5px 0px 0px 0px;">
 <div id="colorToolbar" style="border: 1px solid black; float: left;">
-<div id="red" style="background:red; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="pink" style="background:pink; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="fuchsia" style="background:fuchsia; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="orange" style="background:orange; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="yellow" style="background:yellow; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="lime" style="background:lime; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="green" style="background:green; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="blue" style="background:blue; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="purple" style="background:purple; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="brown" style="background:brown; width:50px; height:50px; float:left;"></div><div style="clear: both;"></div>
-<div id="black" style="background:black; width:50px; height:50px; float:left; border: 1px dashed white;"></div><div style="clear: both;"></div>
-<hr/>
+<div id="red" style="background:red; width:50px; height:50px; float:left;"></div>
+<div id="pink" style="background:pink; width:50px; height:50px; float:left;"></div>
+<div id="fuchsia" style="background:fuchsia; width:50px; height:50px; float:left;"></div>
+<div id="orange" style="background:orange; width:50px; height:50px; float:left;"></div>
+<div id="yellow" style="background:yellow; width:50px; height:50px; float:left;"></div>
+<div id="lime" style="background:lime; width:50px; height:50px; float:left;"></div>
+<div id="green" style="background:green; width:50px; height:50px; float:left;"></div>
+<div id="blue" style="background:blue; width:50px; height:50px; float:left;"></div>
+<div id="purple" style="background:purple; width:50px; height:50px; float:left;"></div>
+<div id="brown" style="background:brown; width:50px; height:50px; float:left;"></div>
+<div id="black" style="background:black; width:50px; height:50px; float:left; border: 1px dashed white;"></div>
+<div id="eraser" style="width:50px; height:50px; float:left;"><img id="white" src="icons/eraser.png" width="50" height="50" /></div>
+<div id="brush1" style="width:50px; height:50px; float:left; border: 1px dashed black;"><img id="brush1" src="icons/brush1.png" width="50" height="50" /></div>
+<div id="brush2" style="width:50px; height:50px; float:left;"><img id="brush2" src="icons/brush2.png" width="50" height="50" /></div>
+<div id="brush3" style="width:50px; height:50px; float:left;"><img id="brush3" src="icons/brush3.png" width="50" height="50" /></div>
 <button id="save" style="width:50px; height:50px; float:left;">Done!</button>
 <div style="clear: both;"></div>
 </div>
